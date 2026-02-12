@@ -72,8 +72,9 @@ As the dataset is highly imbalanced, most no with some yes and has many categori
 
 The project is deployed using Streamlit Community Cloud.
 
-Live App Link: (Add your Streamlit link here)
+Live App Link: https://mlassignment2-a4jv3guyfteawh9u8irhaf.streamlit.app
 ---
 
 ## Repository Structure
+
 
