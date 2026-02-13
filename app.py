@@ -10,7 +10,7 @@ from sklearn.metrics import confusion_matrix
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-#importing model .py files functions
+# importing model .py files functions
 from model.logistic_model import logistic_model
 from model.decisiontree_model import decision_model
 from model.knn_model import knn_model
@@ -18,9 +18,10 @@ from model.naivebayes_model import naivebayes_model
 from model.randomforest_model import randomforest_model
 from model.xgb_model import xgb_model
 
-#loading dataset
+# loading dataset
 st.title("Machine Learning Assignment 2")
 st.subheader("Bank Marketing Classification")
+
 
 @st.cache_data
 def load_data():
@@ -38,26 +39,43 @@ def load_data():
 
 
 data = load_data()
-#preprocessing
+
+# preprocessing
 data['y'] = data['y'].map({'yes': 1, 'no': 0})
 data_new = pd.get_dummies(data, drop_first=True)
 
 X_data = data_new.drop('y', axis=1)
 y_data = data_new['y']
 
-X_train, X_test, y_train, y_test = train_test_split(X_data,y_data,test_size=0.2,random_state=42,stratify=y_data)
+X_train, X_test, y_train, y_test = train_test_split(
+    X_data,
+    y_data,
+    test_size=0.2,
+    random_state=42,
+    stratify=y_data
+)
+
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-logistic_model, logistic_result, logistic_cm = logistic_model(X_train, y_train, X_test, y_test)
-decision_model, decision_result, decision_cm = decision_model(X_train, y_train, X_test, y_test)
-knn_model, knn_result, knn_cm = knn_model(X_train, y_train, X_test, y_test)
-nb_model, nb_result, nb_cm = naivebayes_model(X_train, y_train, X_test, y_test)
-rf_model, rf_result, rf_cm = randomforest_model(X_train, y_train, X_test, y_test)
-xgb_model, xgb_result, xgb_cm = xgb_model(X_train, y_train, X_test, y_test)
+#model training
 
-#result dictionary
+@st.cache_resource
+def model_train(X_train, y_train, X_test, y_test):
+    logistic_model, logistic_result, logistic_cm = logistic_model(X_train, y_train, X_test, y_test)
+    decision_model, decision_result, decision_cm = decision_model(X_train, y_train, X_test, y_test)
+    knn_model, knn_result, knn_cm = knn_model(X_train, y_train, X_test, y_test)
+    nb_model, nb_result, nb_cm = naivebayes_model(X_train, y_train, X_test, y_test)
+    rf_model, rf_result, rf_cm = randomforest_model(X_train, y_train, X_test, y_test)
+    xgb_model, xgb_result, xgb_cm = xgb_model(X_train, y_train, X_test, y_test)
+
+    return (logistic_model, logistic_result, logistic_cm,decision_model, decision_result, decision_cm,knn_model, knn_result, knn_cm,nb_model, nb_result, nb_cm,rf_model, rf_result, rf_cm,xgb_model, xgb_result, xgb_cm)
+
+(logistic_model,logistic_result,logistic_cm,decision_model,decision_result,decision_cm,knn_model,knn_result,knn_cm,nb_model,nb_result,nb_cm,rf_model,rf_result,rf_cm,xgb_model,xgb_result,xgb_cm,) = model_train(X_train, y_train, X_test, y_test)
+
+
+# result dictionary
 result = {
     "Logistic Regression": logistic_result,
     "Decision Tree": decision_result,
@@ -66,13 +84,14 @@ result = {
     "Random Forest": rf_result,
     "XGBoost": xgb_result
 }
-#creating result table 
+
+# creating result table
 result_table = pd.DataFrame(result).T.round(4)
 
 st.subheader("Model Comparison Table")
 st.dataframe(result_table)
 
-#selecting the model
+# selecting the model
 choose_model = st.selectbox(
     "Select Model for Evaluation",
     list(result.keys())
@@ -99,23 +118,34 @@ if file is not None:
     test_data = pd.read_csv(file, sep=';')
     test_data['y'] = test_data['y'].map({'yes': 1, 'no': 0})
     test_data_new = pd.get_dummies(test_data, drop_first=True)
-    test_data_new = test_data_new.reindex(columns=data_new.columns,fill_value=0)
+    test_data_new = test_data_new.reindex(columns=data_new.columns, fill_value=0)
+
     X_data_new = test_data_new.drop('y', axis=1)
     y_data_new = test_data_new['y']
     X_data_new = scaler.transform(X_data_new)
+
     y_pred = chosen_model.predict(X_data_new)
     y_prob = chosen_model.predict_proba(X_data_new)[:, 1]
 
 else:
 
     st.subheader("No test file uploaded, evaluation on internal dataset")
+
     X_data_new = X_test
     y_data_new = y_test
     y_pred = chosen_model.predict(X_data_new)
     y_prob = chosen_model.predict_proba(X_data_new)[:, 1]
 
-#metrics printing
-from sklearn.metrics import (accuracy_score, roc_auc_score, precision_score,recall_score, f1_score, matthews_corrcoef)
+
+# metrics printing
+from sklearn.metrics import (
+    accuracy_score,
+    roc_auc_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    matthews_corrcoef
+)
 
 chosen_metrics = {
     "Accuracy": accuracy_score(y_data_new, y_pred),
@@ -125,11 +155,12 @@ chosen_metrics = {
     "F1 Score": f1_score(y_data_new, y_pred),
     "MCC": matthews_corrcoef(y_data_new, y_pred)
 }
+
 for i, j in chosen_metrics.items():
     st.write(f"{i}: {round(j, 4)}")
 
-#confusion metrics printing
 
+# confusion matrix printing
 st.subheader(f"Confusion Matrix for {choose_model}")
 cm = confusion_matrix(y_data_new, y_pred)
 fig, ax = plt.subplots()
